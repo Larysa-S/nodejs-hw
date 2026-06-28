@@ -15,7 +15,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/Larysa-S/nodejs-hw/issues"
   },
@@ -25,5 +25,12 @@
     "eslint": "^10.6.0",
     "globals": "^17.7.0",
     "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pino-http": "^11.0.0",
+    "pino-pretty": "^13.1.3"
   }
 }

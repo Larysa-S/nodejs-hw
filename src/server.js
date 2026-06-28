@@ -47,3 +47,6 @@ export const setupServer = () => {
     console.log(`Server is running on port ${PORT}`);
   });
 };
+
+// Виклик функції запускаємо в самому кінці файлу, ПОЗА функцією setupServer
+setupServer();

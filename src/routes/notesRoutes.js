@@ -1,21 +1,27 @@
 import { Router } from 'express';
-import * as notesControllers from '../controllers/notesController.js';
+import {
+  getAllNotes,
+  getNoteById,
+  createNote,
+  updateNote,
+  deleteNote,
+} from '../controllers/notesController.js';
 
 const router = Router();
 
 // 1. GET /notes — отримати всі нотатки
-router.get('/notes', notesControllers.getNotesController);
+router.get('/notes', getAllNotes);
 
 // 2. GET /notes/:noteId — отримати нотатку за ID
-router.get('/notes/:noteId', notesControllers.getNoteByIdController);
+router.get('/notes/:noteId', getNoteById);
 
 // 3. POST /notes — створити нотатку
-router.post('/notes', notesControllers.createNoteController);
+router.post('/notes', createNote);
 
 // 4. PATCH /notes/:noteId — оновити нотатку за ID
-router.patch('/notes/:noteId', notesControllers.updateNote);
+router.patch('/notes/:noteId', updateNote);
 
 // 5. DELETE /notes/:noteId — видалити нотатку за ID
-router.delete('/notes/:noteId', notesControllers.deleteNoteController);
+router.delete('/notes/:noteId', deleteNote);
 
 export default router;

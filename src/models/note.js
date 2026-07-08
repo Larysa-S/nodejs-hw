@@ -5,7 +5,7 @@ const noteSchema = new Schema(
   {
     title: {
       type: String,
-      required: true,
+      required: [true, 'Title is required'], // Додали кастомне повідомлення про помилку
       trim: true,
     },
     content: {
@@ -15,15 +15,17 @@ const noteSchema = new Schema(
     },
     tag: {
       type: String,
-      enum: TAGS, // Використовуємо експортований масив
+      enum: TAGS,
       default: 'Todo',
-      index: true, // Додано індекс для швидкої фільтрації за вимогою
     },
   },
   {
-    versionKey: false, // Прибирає технічне поле __v
-    timestamps: true, // Автоматично додає поля createdAt та updatedAt
+    versionKey: false,
+    timestamps: true,
   },
 );
 
-export const Note = model('note', noteSchema, 'notes');
+// Правильне створення звичайного індексу на рівні схеми
+noteSchema.index({ tag: 1 });
+
+export const Note = model('note', noteSchema);

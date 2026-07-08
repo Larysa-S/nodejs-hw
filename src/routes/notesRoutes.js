@@ -1,11 +1,6 @@
 import { Router } from 'express';
-import {
-  getAllNotes,
-  getNoteById,
-  createNote,
-  updateNote,
-  deleteNote,
-} from '../controllers/notesController.js';
+import { celebrate } from 'celebrate';
+
 import {
   getAllNotesSchema,
   noteIdSchema,
@@ -13,21 +8,30 @@ import {
   updateNoteSchema,
 } from '../validations/notesValidation.js';
 
-const router = Router();
+// Імпортуємо контролери
+import {
+  getAllNotes,
+  getNoteById,
+  createNote,
+  deleteNote,
+  updateNote,
+} from '../controllers/notesController.js';
 
-// 1. GET /notes — тепер з валідацією query параметрів
-router.get('/', getAllNotesSchema, getAllNotes);
+const notesRouter = Router();
 
-// 2. GET /notes/:noteId — тепер з валідацією ObjectId
-router.get('/:noteId', noteIdSchema, getNoteById);
+// 1. GET /notes — обов'язково обгортаємо схему в celebrate()
+notesRouter.get('/', celebrate(getAllNotesSchema), getAllNotes);
 
-// 3. POST /notes — тепер з валідацією тіла запиту
-router.post('/', createNoteSchema, createNote);
+// 2. GET /notes/:noteId — обгортаємо схему в celebrate()
+notesRouter.get('/:noteId', celebrate(noteIdSchema), getNoteById);
 
-// 4. PATCH /notes/:noteId — тепер з комбінованою валідацією id та тіла
-router.patch('/:noteId', updateNoteSchema, updateNote);
+// 3. POST /notes — обгортаємо схему в celebrate()
+notesRouter.post('/', celebrate(createNoteSchema), createNote);
 
-// 5. DELETE /notes/:noteId — тепер з валідацією ObjectId
-router.delete('/:noteId', noteIdSchema, deleteNote);
+// 4. DELETE /notes/:noteId — обгортаємо схему в celebrate()
+notesRouter.delete('/:noteId', celebrate(noteIdSchema), deleteNote);
 
-export default router;
+// 5. PATCH /notes/:noteId — використовуємо ОДНУ комбіновану схему всередині celebrate()
+notesRouter.patch('/:noteId', celebrate(updateNoteSchema), updateNote);
+
+export default notesRouter;

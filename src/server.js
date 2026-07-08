@@ -22,7 +22,7 @@ export const setupServer = async () => {
   await connectMongoDB();
 
   // 4. Реєстрація маршрутів з обов'язковим префіксом /notes
-  app.use('/notes', notesRouter);
+  app.use('/', notesRouter);
 
   // -------------------------------------------------------------
   // ОБОВ'ЯЗКОВО: Додаємо обробку помилок валідації від celebrate за ТЗ

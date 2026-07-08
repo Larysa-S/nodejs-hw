@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import 'dotenv/config'; // 1. Підключення dotenv
+import { errors } from 'celebrate'; // Обов'язковий імпорт за ТЗ
+import 'dotenv/config';
 
 import { logger } from './middleware/logger.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
@@ -13,17 +14,20 @@ export const setupServer = async () => {
   const PORT = process.env.PORT || 3000;
 
   // 3. Підключення стандартних та кастомних middleware
-  app.use(logger); // Логування HTTP-запитів
-  app.use(cors()); // Дозвіл запитів з інших доменів
-  app.use(express.json()); // Обробка JSON-тіла запитів
+  app.use(logger);
+  app.use(cors());
+  app.use(express.json());
 
   // 2. Встановлення з’єднання з базою даних ПЕРЕД запуском сервера
   await connectMongoDB();
 
-  // 4. Реєстрація маршрутів для роботи з колекцією нотаток
-  app.use(notesRouter);
+  // 4. Реєстрація маршрутів з обов'язковим префіксом /notes
+  app.use('/notes', notesRouter);
 
-  // 5. Тестовий маршрут /test-error видалено
+  // -------------------------------------------------------------
+  // ОБОВ'ЯЗКОВО: Додаємо обробку помилок валідації від celebrate за ТЗ
+  // -------------------------------------------------------------
+  app.use(errors());
 
   // 6. Додавання middleware notFoundHandler після всіх маршрутів
   app.use(notFoundHandler);

@@ -4,7 +4,7 @@ const sessionSchema = new Schema(
   {
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'user', // Посилання на модель користувача
+      ref: 'User', // Посилання на модель користувача
       required: true,
     },
     accessToken: {

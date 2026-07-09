@@ -4,15 +4,19 @@ import { User } from '../models/user.js';
 
 export const authenticate = async (req, res, next) => {
   try {
-    // 1. Перевіряємо наявність кукі accessToken
-    const { accessToken } = req.cookies;
+    // 1. Беруться ОБИДВІ куки: accessToken та sessionId
+    const { accessToken, sessionId } = req.cookies;
 
-    if (!accessToken) {
+    // ВИПРАВЛЕНО: Перевіряємо наявність обох кукі
+    if (!accessToken || !sessionId) {
       throw createHttpError(401, 'Missing access token');
     }
 
-    // 2. Шукаємо у базі даних сесію за цим токеном
-    const session = await Session.findOne({ accessToken });
+    // 2. Шукаємо у базі даних сесію за ДВОМА критеріями одночасно за ТЗ
+    const session = await Session.findOne({
+      _id: sessionId,
+      accessToken,
+    });
 
     if (!session) {
       throw createHttpError(401, 'Session not found');
@@ -24,14 +28,14 @@ export const authenticate = async (req, res, next) => {
       throw createHttpError(401, 'Access token expired');
     }
 
-    // 4. Шукаємо користувача, пов’язаного з цією сесією
+    // 4. Шукаємо користувача (модель 'User' з великої літери)
     const user = await User.findById(session.userId);
 
     if (!user) {
-      throw createHttpError(401); // 401 статус без повідомлення за ТЗ
+      throw createHttpError(401); // 401 без повідомлення за ТЗ
     }
 
-    // 5. У разі успіху зберігаємо користувача в req.user та йдемо далі
+    // 5. Зберігаємо користувача в req.user та передаємо керування далі
     req.user = user;
     next();
   } catch (error) {

@@ -18,10 +18,10 @@ const noteSchema = new Schema(
       enum: TAGS,
       default: 'Todo',
     },
-    // Додаємо поле зв'язку з користувачем
+    // ВИПРАВЛЕНО: значення ref змінено на 'User' з великої літери
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'user', // Має збігатися з назвою моделі у файлі user.js
+      ref: 'User',
       required: [true, 'User ID is required'],
     },
   },
@@ -31,7 +31,7 @@ const noteSchema = new Schema(
   },
 );
 
-// Створюємо складений індекс для швидкого пошуку нотаток конкретного користувача за тегом
 noteSchema.index({ userId: 1, tag: 1 });
 
-export const Note = model('note', noteSchema);
+// ВИПРАВЛЕНО: ім'я моделі змінено на 'Note' з великої літери
+export const Note = model('Note', noteSchema);

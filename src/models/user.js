@@ -22,7 +22,7 @@ const userSchema = new Schema(
   {
     versionKey: false,
     timestamps: true, // Автоматичне створення createdAt та updatedAt
-  }
+  },
 );
 
 // Хук pre('save'): якщо username не передано, копіюємо туди значення email
@@ -41,4 +41,4 @@ userSchema.set('toJSON', {
   },
 });
 
-export const User = model('user', userSchema);
+export const User = model('User', userSchema);

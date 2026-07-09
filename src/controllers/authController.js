@@ -75,7 +75,7 @@ export const loginUser = async (req, res, next) => {
 // 3. Контролер оновлення сесії
 export const refreshUserSession = async (req, res, next) => {
   try {
-    // Беруться sessionId та refreshToken з cookies
+    // 1. Беруться sessionId та refreshToken з cookies
     const { sessionId, refreshToken } = req.cookies;
 
     // Якщо кукі взагалі відсутні в запиті
@@ -83,7 +83,7 @@ export const refreshUserSession = async (req, res, next) => {
       throw createHttpError(401, 'Session not found');
     }
 
-    // Шукаємо сесію у базі даних
+    // 2. Шукаємо сесію у базі даних
     const session = await Session.findOne({
       _id: sessionId,
       refreshToken,
@@ -94,24 +94,42 @@ export const refreshUserSession = async (req, res, next) => {
       throw createHttpError(401, 'Session not found');
     }
 
-    // Перевіряємо, чи не прострочений refresh-токен
+    // Спільні базові налаштування безпеки для очищення кукі
+    const baseCookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    };
+
+    // 3. Перевіряємо, чи не прострочений refresh-токен
     const isTokenExpired =
       new Date() > new Date(session.refreshTokenValidUntil);
+
+    // ВИПРАВЛЕНО: Якщо токен прострочений, спочатку чистимо БД та кукі, а потім кидаємо 401
     if (isTokenExpired) {
+      // Видаляємо прострочену сесію з бази даних
+      await Session.deleteOne({ _id: sessionId });
+
+      // Очищаємо cookies на стороні клієнта
+      res.clearCookie('accessToken', baseCookieOptions);
+      res.clearCookie('refreshToken', baseCookieOptions);
+      res.clearCookie('sessionId', baseCookieOptions);
+
+      // Кидаємо помилку 401 за ТЗ
       throw createHttpError(401, 'Session token expired');
     }
 
     // Зберігаємо userId перед видаленням сесії, щоб створити нову
     const userId = session.userId;
 
-    // Видаляємо стару сесію з бази
+    // 4. Видаляємо стару дійсну сесію з бази для її оновлення
     await Session.deleteOne({ _id: sessionId });
 
-    // Створюємо нову сесію та додаємо нові кукі до відповіді
+    // 5. Створюємо нову сесію та додаємо нові кукі до відповіді
     const newSession = await createSession(userId);
     setSessionCookies(res, newSession);
 
-    // Повертаємо успішну відповідь за ТЗ
+    // 6. Повертаємо успішну відповідь за ТЗ
     res.status(200).json({
       message: 'Session refreshed',
     });

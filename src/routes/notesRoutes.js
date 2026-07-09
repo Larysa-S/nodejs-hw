@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { celebrate } from 'celebrate';
+import { celebrate, Segments } from 'celebrate'; // Обов'язково імпортуємо Segments
+import { authenticate } from '../middleware/authenticate.js';
 
 import {
   getAllNotesSchema,
@@ -19,19 +20,42 @@ import {
 
 const notesRouter = Router();
 
-// 1. GET /notes — обов'язково обгортаємо схему в celebrate()
-notesRouter.get('/', celebrate(getAllNotesSchema), getAllNotes);
+// Захищаємо всі маршрути нотаток
+notesRouter.use(authenticate);
 
-// 2. GET /notes/:noteId — обгортаємо схему в celebrate()
-notesRouter.get('/:noteId', celebrate(noteIdSchema), getNoteById);
+// 1. GET /notes — валідуємо query-параметри
+notesRouter.get(
+  '/',
+  celebrate({ [Segments.QUERY]: getAllNotesSchema }),
+  getAllNotes,
+);
 
-// 3. POST /notes — обгортаємо схему в celebrate()
-notesRouter.post('/', celebrate(createNoteSchema), createNote);
+// 2. GET /notes/:noteId — валідуємо params (ID в URL)
+notesRouter.get(
+  '/:noteId',
+  celebrate({ [Segments.PARAMS]: noteIdSchema }),
+  getNoteById,
+);
 
-// 4. DELETE /notes/:noteId — обгортаємо схему в celebrate()
-notesRouter.delete('/:noteId', celebrate(noteIdSchema), deleteNote);
+// 3. POST /notes — валідуємо body (тіло запиту)
+notesRouter.post(
+  '/',
+  celebrate({ [Segments.BODY]: createNoteSchema }),
+  createNote,
+);
 
-// 5. PATCH /notes/:noteId — використовуємо ОДНУ комбіновану схему всередині celebrate()
-notesRouter.patch('/:noteId', celebrate(updateNoteSchema), updateNote);
+// 4. DELETE /notes/:noteId — валідуємо params (ID в URL)
+notesRouter.delete(
+  '/:noteId',
+  celebrate({ [Segments.PARAMS]: noteIdSchema }),
+  deleteNote,
+);
+
+// 5. PATCH /notes/:noteId — валідуємо і params, і body через одну схему, якщо вона комбінована
+notesRouter.patch(
+  '/:noteId',
+  celebrate({ [Segments.BODY]: updateNoteSchema }),
+  updateNote,
+);
 
 export default notesRouter;

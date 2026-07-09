@@ -5,7 +5,7 @@ const noteSchema = new Schema(
   {
     title: {
       type: String,
-      required: [true, 'Title is required'], // Додали кастомне повідомлення про помилку
+      required: [true, 'Title is required'],
       trim: true,
     },
     content: {
@@ -18,6 +18,12 @@ const noteSchema = new Schema(
       enum: TAGS,
       default: 'Todo',
     },
+    // Додаємо поле зв'язку з користувачем
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'user', // Має збігатися з назвою моделі у файлі user.js
+      required: [true, 'User ID is required'],
+    },
   },
   {
     versionKey: false,
@@ -25,7 +31,7 @@ const noteSchema = new Schema(
   },
 );
 
-// Правильне створення звичайного індексу на рівні схеми
-noteSchema.index({ tag: 1 });
+// Створюємо складений індекс для швидкого пошуку нотаток конкретного користувача за тегом
+noteSchema.index({ userId: 1, tag: 1 });
 
 export const Note = model('note', noteSchema);

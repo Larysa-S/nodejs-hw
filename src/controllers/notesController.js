@@ -1,28 +1,22 @@
 import createHttpError from 'http-errors';
 import { Note } from '../models/note.js';
 
-// 1. GET /notes — підтримує пагінацію (page, perPage), пошук та фільтрацію.
-// Повертає детальну мета-інформацію та масив нотаток.
+// 1. GET /notes — підтримує пагінацію, пошук, фільтрацію ТІЛЬКИ для поточного користувача
 export const getAllNotes = async (req, res, next) => {
   try {
-    // Отримуємо параметри з query-рядка із дефолтними значеннями за ТЗ
     const { page = 1, perPage = 10, tag, search } = req.query;
 
-    // Перетворюємо значення у числа для математичних розрахунків
     const parsedPage = parseInt(page);
     const parsedPerPage = parseInt(perPage);
-
     const skip = (parsedPage - 1) * parsedPerPage;
 
-    // Створюємо динамічний об'єкт фільтрації
-    const filter = {};
+    // ОБОВ'ЯЗКОВО: додаємо userId поточного користувача у фільтр
+    const filter = { userId: req.user._id };
 
-    // Якщо передано конкретний тег
     if (tag) {
       filter.tag = tag;
     }
 
-    // Якщо передано текст для пошуку через $regex в title або content
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -30,16 +24,13 @@ export const getAllNotes = async (req, res, next) => {
       ];
     }
 
-    // Паралельно виконуємо два запити до бази даних для оптимізації швидкості
     const [notes, totalNotes] = await Promise.all([
       Note.find(filter).skip(skip).limit(parsedPerPage),
-      Note.countDocuments(filter), // Рахуємо загальну кількість документів, що підходять під фільтр
+      Note.countDocuments(filter),
     ]);
 
-    // Розраховуємо загальну кількість сторінок
     const totalPages = Math.ceil(totalNotes / parsedPerPage);
 
-    // Відповідь суворо за ТЗ зі статусом 200 та всіма необхідними властивостями
     res.status(200).json({
       page: parsedPage,
       perPage: parsedPerPage,
@@ -52,11 +43,13 @@ export const getAllNotes = async (req, res, next) => {
   }
 };
 
-// 2. GET /notes/:noteId — повертає чистий об'єкт нотатки
+// 2. GET /notes/:noteId — повертає нотатку, якщо вона належить поточному користувачу
 export const getNoteById = async (req, res, next) => {
   try {
     const { noteId } = req.params;
-    const note = await Note.findById(noteId);
+
+    // Шукаємо за ID нотатки ТА ID користувача одночасно
+    const note = await Note.findOne({ _id: noteId, userId: req.user._id });
 
     if (!note) {
       return next(createHttpError(404, 'Note not found'));
@@ -68,24 +61,30 @@ export const getNoteById = async (req, res, next) => {
   }
 };
 
-// 3. POST /notes — повертає створену нотатку без обгорток
+// 3. POST /notes — створює нотатку з автоматичною прив'язкою userId
 export const createNote = async (req, res, next) => {
   try {
-    const note = await Note.create(req.body);
+    // Додаємо userId з об'єкта авторизованого користувача до тіла запиту перед збереженням
+    const noteData = { ...req.body, userId: req.user._id };
+
+    const note = await Note.create(noteData);
     res.status(201).json(note);
   } catch (err) {
     next(err);
   }
 };
 
-// 4. PATCH /notes/:noteId — оновлено синтаксис для Mongoose 9.x.x
+// 4. PATCH /notes/:noteId — оновлює нотатку тільки якщо вона належить користувачу
 export const updateNote = async (req, res, next) => {
   try {
     const { noteId } = req.params;
 
-    const note = await Note.findByIdAndUpdate(noteId, req.body, {
-      returnDocument: 'after',
-    });
+    // Оновлюємо за складеною умовою для безпеки даних
+    const note = await Note.findOneAndUpdate(
+      { _id: noteId, userId: req.user._id },
+      req.body,
+      { returnDocument: 'after' },
+    );
 
     if (!note) {
       return next(createHttpError(404, 'Note not found'));
@@ -97,11 +96,16 @@ export const updateNote = async (req, res, next) => {
   }
 };
 
-// 5. DELETE /notes/:noteId — статус 200 та повернення видаленого об'єкта
+// 5. DELETE /notes/:noteId — видаляє нотатку тільки якщо вона належить користувачу
 export const deleteNote = async (req, res, next) => {
   try {
     const { noteId } = req.params;
-    const note = await Note.findByIdAndDelete(noteId);
+
+    // Видаляємо за складеною умовою
+    const note = await Note.findOneAndDelete({
+      _id: noteId,
+      userId: req.user._id,
+    });
 
     if (!note) {
       return next(createHttpError(404, 'Note not found'));

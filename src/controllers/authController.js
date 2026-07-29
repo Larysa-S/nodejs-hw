@@ -4,6 +4,12 @@ import { User } from '../models/user.js';
 import { Session } from '../models/session.js';
 import { createSession, setSessionCookies } from '../services/auth.js';
 
+import jwt from 'jsonwebtoken';
+import fs from 'fs/promises';
+import path from 'path';
+import Handlebars from 'handlebars';
+import { sendMail } from '../utils/sendMail.js';
+
 // 1. Контролер реєстрації користувача
 export const registerUser = async (req, res, next) => {
   try {
@@ -161,6 +167,110 @@ export const logoutUser = async (req, res, next) => {
 
     // Повертаємо відповідь зі статусом 204 (без тіла)
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 5. Контролер запиту на надсилання листа для скидання паролю (за ТЗ)
+export const requestResetEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    // Шукаємо користувача за email
+    const user = await User.findOne({ email });
+
+    // Якщо користувача НЕ знайдено — повертаємо 200 за ТЗ з міркувань безпеки
+    if (!user) {
+      return res
+        .status(200)
+        .json({ message: 'Password reset email sent successfully' });
+    }
+
+    // Згенеруйте JWT-токен, який містить sub (id користувача) та email. Термін життя — 15 хвилин.
+    const resetToken = jwt.sign(
+      {
+        sub: user._id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '15m' },
+    );
+
+    // Зберігаємо токен у базі у користувача
+    user.resetToken = resetToken;
+    await user.save();
+
+    // Посилання на фронтенд за ТЗ
+    const resetUrl = `${process.env.FRONTEND_DOMAIN}/reset-password?token=${resetToken}`;
+
+    // Читаємо та компилюємо HTML-лист за допомогою handlebars
+    const templatePath = path.resolve(
+      'src',
+      'templates',
+      'reset-password-email.html',
+    );
+    const templateSource = await fs.readFile(templatePath, 'utf-8');
+    const template = Handlebars.compile(templateSource);
+
+    // Передаємо дані в шаблон
+    const htmlTemplate = template({
+      name: user.username || user.email,
+      resetUrl: resetUrl,
+    });
+
+    // Надсилаємо лист через утиліту sendMail (вона сама викине 500 помилку, якщо щось піде не так)
+    await sendMail({
+      to: email,
+      subject: 'Password Reset Request',
+      html: htmlTemplate,
+    });
+
+    // У разі успіху повертаємо відповідь зі статусом 200
+    res.status(200).json({ message: 'Password reset email sent successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 6. Контролер самого скидання паролю (стовідсотково за ТЗ)
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    let decoded;
+
+    // Верифікуємо отриманий в тілі запиту jwt-токен
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (error) {
+      // Якщо токен невалідний або прострочений
+      throw createHttpError(401, 'Invalid or expired token');
+    }
+
+    // Знайдіть користувача за sub та email, які містяться в токені
+    const user = await User.findOne({
+      _id: decoded.sub,
+      email: decoded.email,
+      resetToken: token, // перевіряємо, чи цей токен ще записаний у базі
+    });
+
+    // Якщо користувача не знайдено
+    if (!user) {
+      throw createHttpError(404, 'User not found');
+    }
+
+    // Зашифруйте новий пароль за допомогою бібліотеки bcrypt
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Оновіть пароль користувача в базі даних та анулюйте токен
+    user.password = hashedPassword;
+    user.resetToken = null;
+    await user.save();
+
+    // У разі успіху поверніть відповідь зі статусом 200
+    res.status(200).json({ message: 'Password reset successfully' });
   } catch (error) {
     next(error);
   }

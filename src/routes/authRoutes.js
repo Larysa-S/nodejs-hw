@@ -5,10 +5,14 @@ import {
   loginUser,
   refreshUserSession,
   logoutUser,
+  requestResetEmail,
+  resetPassword,
 } from '../controllers/authController.js';
 import {
   registerUserSchema,
   loginUserSchema,
+  requestResetEmailSchema,
+  resetPasswordSchema,
 } from '../validations/authValidation.js';
 
 const authRouter = Router();
@@ -36,5 +40,23 @@ authRouter.post('/refresh', refreshUserSession);
 
 // Маршрут логауту
 authRouter.post('/logout', logoutUser);
+
+// 1. Запит на надсилання листа для скидання паролю (інтегровано з celebrate)
+authRouter.post(
+  '/request-reset-email',
+  celebrate({
+    [Segments.BODY]: requestResetEmailSchema,
+  }),
+  requestResetEmail,
+);
+
+// 2. Встановлення нового пароля за допомогою токена (інтегровано з celebrate)
+authRouter.post(
+  '/reset-password',
+  celebrate({
+    [Segments.BODY]: resetPasswordSchema,
+  }),
+  resetPassword,
+);
 
 export default authRouter;

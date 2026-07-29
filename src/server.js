@@ -10,6 +10,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { connectMongoDB } from './db/connectMongoDB.js';
 import notesRouter from './routes/notesRoutes.js';
 import authRouter from './routes/authRoutes.js';
+// КРИТЕРІЙ ТЗ: Імпортуємо роутер користувача для аватарок
+import userRouter from './routes/userRoutes.js';
 
 export const setupServer = async () => {
   const app = express();
@@ -49,6 +51,8 @@ export const setupServer = async () => {
 
   // 3. Реєстрація маршрутів
   app.use('/auth', authRouter);
+  // КРИТЕРІЙ ТЗ: Реєстрація загального роуту користувача за ТЗ
+  app.use('/users', userRouter);
   app.use('/', notesRouter);
 
   // 4. ОБОВ'ЯЗКОВО: Спочатку обробка помилок валідації від celebrate

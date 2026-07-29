@@ -18,6 +18,16 @@ const userSchema = new Schema(
       required: true,
       minlength: 8, // Мінімальна довжина 8 символів
     },
+    // КРИТЕРІЙ: Додаємо поле avatar за ТЗ
+    avatar: {
+      type: String,
+      default: 'https://goit.global',
+    },
+    // НЕОБХІДНО: Тимчасовий токен для скидання паролю (для вашого authController)
+    resetToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     versionKey: false,

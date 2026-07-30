@@ -7,7 +7,7 @@ const userRouter = express.Router();
 
 // КРИТЕРІЙ: Захист маршруту (authenticate) та обробка 'avatar' через middleware upload
 userRouter.patch(
-  '/me/avatar',
+  '/users/me/avatar',
   authenticate,
   upload.single('avatar'),
   updateUserAvatar,

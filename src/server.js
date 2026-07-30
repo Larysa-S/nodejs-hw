@@ -24,7 +24,6 @@ export const setupServer = async () => {
   const allowedOrigins = [
     'http://localhost:5173', // Стандартний порт для Vite фронтенду
     'http://localhost:3000',
-    // Додайте сюди адресу вашого фронтенду на Netlify/Vercel, якщо він є
   ];
 
   app.use(
@@ -50,18 +49,17 @@ export const setupServer = async () => {
   await connectMongoDB();
 
   // 3. Реєстрація маршрутів
-  app.use('/auth', authRouter);
-  // КРИТЕРІЙ ТЗ: Реєстрація загального роуту користувача за ТЗ
-  app.use('/users', userRouter);
-  app.use('/', notesRouter);
+  app.use(authRouter);
+  app.use(userRouter);
+  app.use(notesRouter);
 
-  // 4. ОБОВ'ЯЗКОВО: Спочатку обробка помилок валідації від celebrate
-  app.use(errors());
-
-  // 5. Додавання middleware notFoundHandler після всіх маршрутів
+  // 4. Обробка неіснуючих маршрутів (404)
   app.use(notFoundHandler);
 
-  // 6. Додавання errorHandler як останній middleware у стеку
+  // 5. Обробка помилок валідації від celebrate
+  app.use(errors());
+
+  // 6. Глобальний обробник помилок сервера
   app.use(errorHandler);
 
   // Запуск сервера

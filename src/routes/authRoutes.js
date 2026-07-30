@@ -19,7 +19,7 @@ const authRouter = Router();
 
 // Маршрут реєстрації
 authRouter.post(
-  '/register',
+  '/auth/register',
   celebrate({
     [Segments.BODY]: registerUserSchema,
   }),
@@ -28,7 +28,7 @@ authRouter.post(
 
 // Маршрут логіну
 authRouter.post(
-  '/login',
+  '/auth/login',
   celebrate({
     [Segments.BODY]: loginUserSchema,
   }),
@@ -36,14 +36,14 @@ authRouter.post(
 );
 
 // Маршрут оновлення сесії
-authRouter.post('/refresh', refreshUserSession);
+authRouter.post('/auth/refresh', refreshUserSession);
 
 // Маршрут логауту
-authRouter.post('/logout', logoutUser);
+authRouter.post('/auth/logout', logoutUser);
 
 // 1. Запит на надсилання листа для скидання паролю (інтегровано з celebrate)
 authRouter.post(
-  '/request-reset-email',
+  '/auth/request-reset-email',
   celebrate({
     [Segments.BODY]: requestResetEmailSchema,
   }),
@@ -52,7 +52,7 @@ authRouter.post(
 
 // 2. Встановлення нового пароля за допомогою токена (інтегровано з celebrate)
 authRouter.post(
-  '/reset-password',
+  '/auth/reset-password',
   celebrate({
     [Segments.BODY]: resetPasswordSchema,
   }),

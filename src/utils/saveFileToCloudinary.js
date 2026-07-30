@@ -1,27 +1,30 @@
 import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs/promises';
 
-// Налаштування Cloudinary з вашого .env
+// Конфігурація Cloudinary з вашого .env
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const saveFileToCloudinary = async (filePath) => {
-  try {
-    // Завантажуємо файл у папку 'avatars' у хмарі Cloudinary
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder: 'avatars',
-      transformation: [{ width: 250, height: 250, crop: 'fill' }], // Автоматичний кроп під квадрат аватара
-    });
+// ВИПРАВЛЕНО: Функція приймає buffer та userId за вимогами ТЗ
+export const saveFileToCloudinary = (buffer, userId) => {
+  return new Promise((resolve, reject) => {
+    // ВИПРАВЛЕНО: Організовуємо завантаження виключно через upload_stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'avatars',
+        public_id: userId, // ВИПРАВЛЕНО: Використовуємо userId для встановлення public_id
+        overwrite: true, // Дозволяє перезаписувати старий аватар при оновленні
+        transformation: [{ width: 250, height: 250, crop: 'fill' }], // Опціональний кроп
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result); // Повертає проміс із об'єктом даних завантаженого зображення
+      },
+    );
 
-    // Повертаємо пряме безпечне посилання на зображення (secure_url)
-    return result.secure_url;
-  } catch (error) {
-    throw error;
-  } finally {
-    // КРИТЕРІЙ: Обов'язково видаляємо тимчасовий файл із нашого сервера (папки temp)
-    await fs.unlink(filePath);
-  }
+    // ВИПРАВЛЕНО: Передаємо буфер безпосередньо в потік (без зчитування та видалення з диску)
+    uploadStream.end(buffer);
+  });
 };

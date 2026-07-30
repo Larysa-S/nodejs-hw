@@ -2,33 +2,35 @@ import createHttpError from 'http-errors';
 import { User } from '../models/user.js';
 import { saveFileToCloudinary } from '../utils/saveFileToCloudinary.js';
 
-// Єдиний контролер у цьому файлі за вашим ТЗ
 export const updateUserAvatar = async (req, res, next) => {
   try {
-    // 1. Перевіряємо наявність файлу у реквесті (Multer завантажує буфер в req.file)
+    // 1. Перевіряємо наявність файлу в реквесті (Multer кладе його в req.file)
     if (!req.file) {
       throw createHttpError(400, 'No file');
     }
 
-    // 2. Викликаємо утиліту saveFileToCloudinary, передаючи туди буфер файлу за ТЗ
-    const cloudinaryResponse = await saveFileToCloudinary(req.file.buffer);
-
-    // 3. Дістаємо ID поточного авторизованого користувача
-    // (Мідлвара authenticate записує дані користувача в req.user)
+    // 2. Дістаємо ID поточного авторизованого користувача
     const userId = req.user._id;
 
-    // 4. Оновлюємо поле avatar у базі даних, використовуючи отримане secure_url
+    // 3. ВИПРАВЛЕНО: Явно передаємо і буфер файлу, і ID користувача як другий аргумент
+    const cloudinaryResponse = await saveFileToCloudinary(
+      req.file.buffer,
+      userId,
+    );
+
+    // 4. Оновлюємо поле avatar користувача в базі даних
+    // ВИПРАВЛЕНО: Замість застарілої опції { new: true } використовуємо { returnDocument: 'after' } за ТЗ
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { avatar: cloudinaryResponse.secure_url },
-      { new: true }, // Повертає оновлений документ
+      { returnDocument: 'after' },
     );
 
     if (!updatedUser) {
       throw createHttpError(404, 'User not found');
     }
 
-    // 5. У разі успіху повертаємо відповідь зі статусом 200 та об’єктом { url: ... }
+    // 5. У разі успіху повертаємо відповідь зі статусом 200 та об’єктом
     res.status(200).json({
       url: updatedUser.avatar,
     });

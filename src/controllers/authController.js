@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs/promises';
 import path from 'path';
 import Handlebars from 'handlebars';
-import { sendMail } from '../utils/sendMail.js';
+import { sendEmail } from '../utils/sendMail.js';
 
 // 1. Контролер реєстрації користувача
 export const registerUser = async (req, res, next) => {
@@ -219,12 +219,23 @@ export const requestResetEmail = async (req, res, next) => {
       resetUrl: resetUrl,
     });
 
-    // Надсилаємо лист через утиліту sendMail (вона сама викине 500 помилку, якщо щось піде не так)
-    await sendMail({
-      to: email,
-      subject: 'Password Reset Request',
-      html: htmlTemplate,
-    });
+    // ВИПРАВЛЕНО: Окремий try/catch для відправки листа, щоб явно перетворити помилку на HTTP 500
+    try {
+      // ВИПРАВЛЕНО: Імпорт та використання відповідають назві функції sendEmail
+      // ВИПРАВЛЕНО: Адреса from з process.env.SMTP_FROM явно включена в опції за ТЗ
+      await sendEmail({
+        from: process.env.SMTP_FROM,
+        to: email,
+        subject: 'Password Reset Request',
+        html: htmlTemplate,
+      });
+    } catch (mailError) {
+      // ВИПРАВЛЕНО: Помилка перетворюється на HTTP-помилку 500 за допомогою http-errors
+      throw createHttpError(
+        500,
+        'Failed to send the email, please try again later.',
+      );
+    }
 
     // У разі успіху повертаємо відповідь зі статусом 200
     res.status(200).json({ message: 'Password reset email sent successfully' });
